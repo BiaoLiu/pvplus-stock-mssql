@@ -15,6 +15,7 @@ import os
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
+TO_ABS_PATH = lambda p: os.path.join(BASE_DIR, p)
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.10/howto/deployment/checklist/
@@ -43,7 +44,7 @@ INSTALLED_APPS = [
     'pvplus_common'
 ]
 
-MIDDLEWARE = [
+MIDDLEWARE_CLASSES = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -82,16 +83,27 @@ DATABASES = {
     #     'ENGINE': 'django.db.backends.sqlite3',
     #     'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
     # }
+    # 'default': {
+    #     'NAME': 'PvPlus_Stock',
+    #     'ENGINE': 'sql_server.pyodbc',
+    #     'HOST': '119.29.144.39',
+    #     'USER': 'sa',
+    #     'PASSWORD': 'PvPlus2015',
+    #     'OPTIONS': {
+    #         'provider': 'SQLNCLI11',
+    #         'extra_params': 'DataTypeCompatibility=80;MARS Connection=True'
+    #     },
+    # }
     'default': {
-        'NAME': 'PvPlus_Stock',
-        'ENGINE': 'sql_server.pyodbc',
-        'HOST': '119.29.144.39',
+        'ENGINE': 'django_pyodbc',
+        'NAME': 'PvPlus_Stock',  # 这个不需要，不过django里有限制，必须有NAME项，这里不会生效，实际的在odbc.ini里写的
         'USER': 'sa',
         'PASSWORD': 'PvPlus2015',
+        'HOST': '119.29.144.39',  # 这个也不会生效，实际生效的是freetds.conf里配置的
         'OPTIONS': {
-            'provider': 'SQLNCLI11',
-            'extra_params': 'DataTypeCompatibility=80;MARS Connection=True'
-        },
+            'driver': 'FreeTDS',
+            'dsn': 'PvPlus',  # ODBC DSN name defined in your odbc.ini,
+        }
     }
 
 }
@@ -115,6 +127,57 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+LOG_FILE='./log.txt'
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': True,
+    'filters':{
+    },
+    'formatters': {
+        'simple': {
+            'format': '[%(levelname)s] %(module)s : %(message)s'
+        },
+        'verbose': {
+            'format':
+                '[%(asctime)s] [%(levelname)s] %(module)s : %(message)s'
+        }
+    },
+    'handlers': {
+        'console': {
+            'level': 'INFO',
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose'
+        },
+        'file': {
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            'formatter': 'verbose',
+            'filename': LOG_FILE
+        },
+        'mail_admins': {
+            'level': 'ERROR',
+            'class': 'django.utils.log.AdminEmailHandler',
+            # 'filters': ['special']
+        }
+    },
+    'loggers': {
+        '': {
+            'handlers': ['file', 'console'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+        'django': {
+            'handlers': ['file', 'console'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+        'django.request': {
+            'handlers': ['file','mail_admins'],
+            'level': 'ERROR',
+            'propagate': True,
+        },
+    }
+}
 
 # Internationalization
 # https://docs.djangoproject.com/en/1.10/topics/i18n/
@@ -134,3 +197,4 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/1.10/howto/static-files/
 
 STATIC_URL = '/static/'
+STATIC_ROOT = TO_ABS_PATH('static')
